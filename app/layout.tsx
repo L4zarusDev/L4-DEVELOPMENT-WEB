@@ -140,22 +140,7 @@ export const metadata: Metadata = {
    - Organización
    - Sitio web
    ───────────────────────────────────────────────────────────── */
-const orgJson = buildOrganization({
-  name: 'L4 DEVELOPMENT',
-  url: BASE,
-  logo: `${BASE}/apple-touch-icon.png`,
-  sameAs: [
-    'https://github.com/L4zarusDev',
-    'https://www.instagram.com/l4.dev/',
-    // agrega LinkedIn/X si los tienes
-  ],
-});
 
-const siteJson = buildWebsite({
-  name: 'L4 DEVELOPMENT',
-  url: BASE,
-  searchUrl: `${BASE}/search`,
-});
 
 /* ─────────────────────────────────────────────────────────────
    VIEWPORT
@@ -230,6 +215,7 @@ export default function RootLayout({
             </div>
 
             {/* Inyección de datos estructurados para SEO */}
+
           </ThemeProvider>
         </LoadingProvider>
       </body>
