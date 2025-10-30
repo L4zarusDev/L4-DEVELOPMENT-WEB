@@ -7,7 +7,7 @@ import {
   MegaphoneIcon,
   KeyIcon,
 } from '@heroicons/react/24/solid';
-import PackagesModal, { PackagePlan } from './PackagesModal';
+import PackagesModal from './PackagesModal';
 
 export interface Service {
   title: string;
@@ -18,11 +18,27 @@ export interface Service {
     items: string[];
   }>;
   tags?: string[];
-  links?: { title: string; url?: string; action?: 'packages' }[];
+  // los botones de la card
+  links?: Array<{
+    title: string;
+    url?: string;
+    action?: 'packages'; // ← este es el que abre el modal
+  }>;
+  // info de paquetes (si el servicio la trae)
   packages?: {
     subtitle?: string;
-    plans: PackagePlan[];
+    plans: Array<{
+      name: string;
+      price: string;
+      highlights: string[];
+      cta?: { title: string; url: string };
+    }>;
   };
+}
+
+interface ServiceCardProps extends Service {
+  // 👉 si el padre quiere controlar el modal (como en Services/index.tsx)
+  onOpenPackages?: (service: Service) => void;
 }
 
 // Mapa de iconos por tipo de servicio
@@ -36,17 +52,15 @@ const iconMap = {
 /**
  * ServiceCard
  * ------------------------------------------------------------
- * Card de servicio reutilizable:
- * - muestra título, subtítulo y un icono según el tipo
- * - lista bullets agrupados (heading + items)
- * - muestra tags al final
- * - soporta links de acción (botones) que pueden:
- *    - abrir un modal de paquetes (`action: 'packages'`)
- *    - o ir a una URL (por ejemplo, WhatsApp o una landing)
- * - si el servicio tiene `packages`, renderiza un `PackagesModal` (headlessui)
+ * - muestra título, tag y secciones de bullets
+ * - muestra tags
+ * - los botones de `links` pueden:
+ *    - ir a una URL (WhatsApp, landing…)
+ *    - o abrir el popup de paquetes (`action: 'packages'`)
  *
- * También hay una función `handleCheckout` (comentada aquí con Stripe) por si
- * quieres vender los planes directo; de momento la dejamos preparada.
+ * Importante:
+ * - si VIENE `onOpenPackages` → delega al padre
+ * - si NO viene pero sí hay `packages` → abre su modal interno
  */
 export default function ServiceCard({
   title,
@@ -56,28 +70,55 @@ export default function ServiceCard({
   tags = [],
   links = [],
   packages,
-}: Service) {
+  onOpenPackages,
+}: ServiceCardProps) {
   const Icon = iconMap[icon];
+
+  // fallback de modal interno (sólo si NO hay onOpenPackages)
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   /**
-   * Maneja los botones de la card:
-   * - si es action: 'packages' → abre modal
-   * - si trae url → redirige
+   * Maneja los botones de acción:
+   * - action === 'packages'
+   *    - si el padre me dio onOpenPackages → lo llamo
+   *    - si no → abro mi modal interno
+   * - url → navego
    */
   const handleLinkClick = (action?: 'packages', url?: string) => {
-    if (action === 'packages' && packages) {
-      setOpen(true);
-      return;
+    if (action === 'packages') {
+      // prioridad: que lo controle el padre
+      if (onOpenPackages) {
+        onOpenPackages({
+          title,
+          tagline,
+          icon,
+          bullets,
+          tags,
+          links,
+          packages,
+        });
+        return;
+      }
+
+      // si no hay callback, pero sí hay paquetes, usamos el modal propio
+      if (packages) {
+        setOpen(true);
+        return;
+      }
     }
-    if (url) window.location.href = url;
+
+    // acción normal: ir a la URL
+    if (url) {
+      window.location.href = url;
+    }
   };
 
   /**
-   * (Opcional)
-   * Ejemplo para hacer checkout con Stripe desde un plan:
-   * NO se está usando en la UI de arriba, pero lo dejamos como referencia.
+   * (Opcional / futuro)
+   * Checkout con Stripe directo desde la card.
+   * Lo dejamos aquí por si más adelante quieres vender el plan
+   * sin pasar por WhatsApp.
    */
   const handleCheckout = async (priceId: string) => {
     setLoading(true);
@@ -106,7 +147,7 @@ export default function ServiceCard({
   return (
     <>
       <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/40 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] transition hover:border-red-500/40 hover:bg-neutral-900/60">
-        {/* Header de la card */}
+        {/* Header */}
         <div className="mb-5 flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-r from-red-600 to-black">
             <Icon className="h-5 w-5 text-white" />
@@ -117,7 +158,7 @@ export default function ServiceCard({
           </div>
         </div>
 
-        {/* Contenido: bullets por secciones */}
+        {/* Bullets / secciones */}
         <div className="flex flex-1 flex-col gap-5">
           {bullets.map((section, idx) => (
             <div
@@ -139,7 +180,7 @@ export default function ServiceCard({
           ))}
         </div>
 
-        {/* Footer: tags + botones */}
+        {/* Footer */}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
@@ -153,7 +194,7 @@ export default function ServiceCard({
             ))}
           </div>
 
-          {/* Botones de acción */}
+          {/* Botones */}
           <div className="flex gap-2">
             {links.map((link, i) => (
               <button
@@ -167,12 +208,12 @@ export default function ServiceCard({
           </div>
         </div>
 
-        {/* Glow / ring al hover */}
+        {/* borde glow */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/0 transition group-hover:ring-white/10" />
       </div>
 
-      {/* Modal de paquetes, sólo si el servicio lo trae */}
-      {packages && (
+      {/* Fallback: modal interno si NO hay callback del padre */}
+      {packages && !onOpenPackages && (
         <PackagesModal
           open={open}
           onClose={() => setOpen(false)}

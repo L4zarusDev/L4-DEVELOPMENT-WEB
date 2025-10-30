@@ -4,49 +4,37 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ServiceCard, { Service } from './ServiceCard';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 
-const GAP_PX = 32; // tailwind gap-8 = 2rem ≈ 32px
+const GAP_PX = 32;
 
-/**
- * ServicesCarousel
- * ------------------------------------------------------------
- * Carrusel horizontal infinito (fake-loop) para las cards de servicio.
- *
- * ¿Cómo funciona el loop?
- * - Triplicamos el array: [A B C | A B C | A B C]
- * - Te colocamos en el bloque del medio
- * - Cuando te acercas demasiado a la izquierda o a la derecha
- *   te "saltamos" silenciosamente al bloque central para que parezca infinito
- *
- * Características:
- * - Soporta teclado (← →)
- * - Flechas a los lados
- * - Responsive: 1 card en mobile, 2 en md+
- * - Hide scrollbar (opcional, ver comentario de abajo)
- */
-export default function ServicesCarousel({ services }: { services: Service[] }) {
+interface ServicesCarouselProps {
+  services: Service[];
+  // 👉 el padre lo usa para abrir el modal de paquetes
+  onOpenPackages?: (service: Service) => void;
+}
+
+export default function ServicesCarousel({
+  services,
+  onOpenPackages,
+}: ServicesCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const slideRef = useRef<HTMLDivElement>(null); // medimos una sola card para saber el ancho real
+  const slideRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(true);
   const [canNext, setCanNext] = useState(true);
 
-  // Triplicamos para tener margen de loop
+  // triplicamos el array para el loop
   const tripled = useMemo(
     () => [...services, ...services, ...services],
     [services],
   );
   const baseLen = services.length;
-
-  // Cuántos slides avanza cada click
   const stepSlides = 1;
 
-  // Obtiene el ancho de una slide + gap
   const getSlideWidth = useCallback(() => {
     const node = slideRef.current;
     if (!node) return 0;
     return Math.round(node.getBoundingClientRect().width + GAP_PX);
   }, []);
 
-  // Mover el scroll al inicio del bloque central (posición baseLen)
   const jumpToMiddleStart = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -54,10 +42,6 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
     el.scrollTo({ left: baseLen * w, behavior: 'auto' });
   }, [baseLen, getSlideWidth]);
 
-  /**
-   * Normaliza posición si nos salimos mucho por izq/der.
-   * Esto es lo que mantiene la ilusión del carrusel infinito.
-   */
   const normalizeIfNeeded = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -67,25 +51,20 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
     const currentIndexFloat = el.scrollLeft / w;
     let currentIndex = Math.round(currentIndexFloat);
 
-    // si estamos demasiado a la izquierda → saltamos al centro
     if (currentIndex < baseLen - 4) {
       currentIndex += baseLen;
       el.scrollTo({ left: currentIndex * w, behavior: 'auto' });
-    }
-    // si estamos demasiado a la derecha → saltamos al centro
-    else if (currentIndex >= 2 * baseLen + 4) {
+    } else if (currentIndex >= 2 * baseLen + 4) {
       currentIndex -= baseLen;
       el.scrollTo({ left: currentIndex * w, behavior: 'auto' });
     }
   }, [baseLen, getSlideWidth]);
 
-  // En loop siempre hay prev/next
   const updateButtons = useCallback(() => {
     setCanPrev(true);
     setCanNext(true);
   }, []);
 
-  // Setup inicial + listeners
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -110,7 +89,6 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
     };
   }, [jumpToMiddleStart, normalizeIfNeeded, updateButtons]);
 
-  // Scroll programático por N slides
   const scrollBySlides = (dir: 'left' | 'right', slides = stepSlides) => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -120,13 +98,11 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
     const delta = dir === 'left' ? -w * slides : w * slides;
     el.scrollBy({ left: delta, behavior: 'smooth' });
 
-    // después del smooth, re-normalizamos
     window.setTimeout(() => {
       normalizeIfNeeded();
     }, 380);
   };
 
-  // soporte teclado
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowLeft') scrollBySlides('left');
     if (e.key === 'ArrowRight') scrollBySlides('right');
@@ -139,11 +115,11 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
       tabIndex={0}
       aria-label="Carrusel de servicios"
     >
-      {/* Degradados laterales para “fade” */}
+      {/* fades laterales */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-black to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-black to-transparent" />
 
-      {/* Flecha izquierda */}
+      {/* flecha izquierda */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex items-center pl-2">
         <button
           type="button"
@@ -156,7 +132,7 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
         </button>
       </div>
 
-      {/* Flecha derecha */}
+      {/* flecha derecha */}
       <div className="pointer-events-none absolute inset-y-0 right-0 z-30 flex items-center pr-2">
         <button
           type="button"
@@ -169,7 +145,7 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
         </button>
       </div>
 
-      {/* Track / lista de cards */}
+      {/* track */}
       <div
         ref={scrollerRef}
         className="no-scrollbar relative z-10 flex justify-center gap-8 overflow-x-auto scroll-px-6 px-12 py-2 snap-x snap-mandatory"
@@ -178,27 +154,14 @@ export default function ServicesCarousel({ services }: { services: Service[] }) 
         {tripled.map((svc, idx) => (
           <div
             key={`${svc.title}-${idx}`}
-            className="snap-start w-[88vw] shrink-0 sm:w-[540px] md:w-[calc(50%-16px)] lg:w-[calc(50%-16px)]"
-            // medimos sólo el primer slide del bloque medio
+            className="w-[88vw] shrink-0 snap-start sm:w-[540px] md:w-[calc(50%-16px)] lg:w-[calc(50%-16px)]"
             ref={idx === baseLen ? slideRef : undefined}
           >
-            <ServiceCard {...svc} />
+            {/* 👇 aquí va el fix: props “planchadas” + callback */}
+            <ServiceCard {...svc} onOpenPackages={onOpenPackages} />
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-/*
-CSS opcional para ocultar la barra de scroll (pónlo en globals.css):
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-*/

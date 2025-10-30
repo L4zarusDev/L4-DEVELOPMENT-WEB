@@ -1,28 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import SectionHeading from '../SectionHeading';
 import ServicesCarousel from './ServicesCarousel';
-import type { Service } from './ServiceCard';
+import ServiceCard, { Service } from './ServiceCard';
+import PackageModal from './PackagesModal';
 
-// 👇 Cambia este número por el tuyo (formato internacional sin +)
-const WHATSAPP_NUMBER = '55333201442';
-
-// Helper para construir links de WhatsApp con mensaje precargado
+// 👇 Cambia este número por el tuyo
+const WHATSAPP_NUMBER = '5533201442';
 const wa = (msg: string) =>
   `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
 /**
- * servicesData
- * ------------------------------------------------------------
- * Aquí definimos TODO el contenido de los servicios:
- * - título, descripción corta, icono
- * - bullets (para mostrarlos dentro de la card)
- * - tags (para filtros o badges)
- * - links: AHORA todos van a WhatsApp con un mensaje contextual
- * - algunos tienen `packages` para mostrar planes y CTA de WhatsApp en cada uno
- *
- * La idea es que desde el carrusel el usuario NO salga a cal.com
- * sino que te escriba directo y tú cierras por WhatsApp.
+ * Data de servicios
+ * - Algunos links tienen `action: 'packages'` → abren el modal
+ * - Otros links tienen `url` → siguen enviando a WhatsApp
  */
 export const servicesData: Service[] = [
   {
@@ -75,7 +67,7 @@ export const servicesData: Service[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // DESARROLLO WEB (con paquetes)
+  // DESARROLLO WEB (con paquetes → se abre modal)
   // ─────────────────────────────────────────────────────────────────
   {
     title: 'Desarrollo web',
@@ -106,13 +98,12 @@ export const servicesData: Service[] = [
     tags: ['Next.js', 'SEO', 'Accesibilidad'],
     links: [
       {
-        // antes era action: 'packages' para abrir modal → ahora WA
+        // 👇 ESTE abre el modal
         title: 'Quiero ver los paquetes',
-        url: wa(
-          'Hola 👋, me interesa el servicio de *Desarrollo web* y quiero que me compartas los *paquetes y precios* que aparecen en la web.',
-        ),
+        action: 'packages',
       },
       {
+        // este sigue siendo WA
         title: 'Agendar por WhatsApp',
         url: wa(
           'Hola 👋, quiero una web (Next.js/WordPress) y me gustaría agendar una llamada para definir alcance y presupuesto.',
@@ -125,7 +116,6 @@ export const servicesData: Service[] = [
         {
           name: 'Web Start',
           price: '$550 MXN',
-          cadence: '/proyecto',
           highlights: [
             'Landing 1 sección + contacto',
             'UI/UX base + copy simple',
@@ -142,8 +132,6 @@ export const servicesData: Service[] = [
         {
           name: 'Web Growth',
           price: '$3,490 MXN',
-          cadence: '/proyecto',
-          popular: true,
           highlights: [
             'Sitio multipágina + Blog',
             'CMS (Headless o WP)',
@@ -160,7 +148,6 @@ export const servicesData: Service[] = [
         {
           name: 'Web Performance+',
           price: '$4,500 MXN o Mas',
-          cadence: '/proyecto',
           highlights: [
             'Arquitectura Next.js avanzada',
             'i18n + Accesibilidad AA',
@@ -179,7 +166,7 @@ export const servicesData: Service[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // IMPULSO REDES SOCIALES (con paquetes)
+  // IMPULSO REDES SOCIALES (con paquetes → modal)
   // ─────────────────────────────────────────────────────────────────
   {
     title: 'Impulso de redes sociales',
@@ -214,10 +201,8 @@ export const servicesData: Service[] = [
     tags: ['Content', 'Ads', 'Analytics'],
     links: [
       {
-        title: 'Ver planes por WhatsApp',
-        url: wa(
-          'Hola 👋, vi el servicio de *Impulso de redes sociales* y quiero que me mandes los *planes mensuales* (Starter / Growth / Pro).',
-        ),
+        title: 'Ver planes',
+        action: 'packages', // 👈 abrir modal
       },
       {
         title: 'Reservar por WhatsApp',
@@ -232,7 +217,6 @@ export const servicesData: Service[] = [
         {
           name: 'Starter',
           price: '$550 MXN',
-          cadence: '/mes',
           highlights: [
             '12 posts/mes (estáticos y 4 reels)',
             'Calendario editorial',
@@ -249,8 +233,6 @@ export const servicesData: Service[] = [
         {
           name: 'Growth',
           price: '$750 MXN',
-          cadence: '/mes',
-          popular: true,
           highlights: [
             '20 posts/mes (8 reels)',
             'UGC ligero + colaboraciones',
@@ -267,7 +249,6 @@ export const servicesData: Service[] = [
         {
           name: 'Pro',
           price: '$1,200 MXN',
-          cadence: '/mes',
           highlights: [
             '30 posts/mes (12 reels)',
             'Producción de creatividades premium',
@@ -286,7 +267,7 @@ export const servicesData: Service[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // VENTA DE LICENCIAS
+  // VENTA DE LICENCIAS (sin modal, puro WhatsApp)
   // ─────────────────────────────────────────────────────────────────
   {
     title: 'Venta de licencias (SaaS/Software)',
@@ -295,7 +276,11 @@ export const servicesData: Service[] = [
     bullets: [
       {
         heading: 'Producto',
-        items: ['Demo y video', 'Features y comparativa de planes', 'FAQ y reseñas'],
+        items: [
+          'Demo y video',
+          'Features y comparativa de planes',
+          'FAQ y reseñas',
+        ],
       },
       { heading: 'Checkout', items: ['Stripe / Paddle / Lemon Squeezy'] },
       {
@@ -327,16 +312,23 @@ export const servicesData: Service[] = [
   },
 ];
 
-/**
- * Services (UI)
- * ------------------------------------------------------------
- * Sección que muestra:
- * - título y subtítulo
- * - carrusel con las cards de arriba
- *
- * Esto es lo que estás usando en la home.
- */
 export default function Services() {
+  // estado para el modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+  // handler que se le pasa al carrusel / cards
+  const handleOpenPackages = (service: Service) => {
+    if (!service.packages) return;
+    setSelectedService(service);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedService(null);
+  };
+
   return (
     <section id="services" className="mx-auto mt-56 max-w-7xl px-4 py-16">
       <SectionHeading
@@ -346,8 +338,26 @@ export default function Services() {
 
       {/* Carrusel en una sola línea con flechas */}
       <div className="mt-10">
-        <ServicesCarousel services={servicesData} />
+        {/* IMPORTANTE:
+            ServicesCarousel (y/o ServiceCard) deben invocar este callback cuando
+            detecten un link con action === 'packages'
+        */}
+        <ServicesCarousel
+          services={servicesData}
+          onOpenPackages={handleOpenPackages}
+        />
       </div>
+
+      {/* Modal de paquetes */}
+      {selectedService && selectedService.packages && (
+        <PackageModal
+          open={isModalOpen}
+          onClose={handleCloseModal}
+          title={selectedService.title}
+          subtitle={selectedService.packages.subtitle}
+          plans={selectedService.packages.plans}
+        />
+      )}
     </section>
   );
 }
