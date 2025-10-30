@@ -230,8 +230,6 @@ export default function RootLayout({
             </div>
 
             {/* Inyección de datos estructurados para SEO */}
-            <JsonLd data={orgJson} />
-            <JsonLd data={siteJson} />
           </ThemeProvider>
         </LoadingProvider>
       </body>
