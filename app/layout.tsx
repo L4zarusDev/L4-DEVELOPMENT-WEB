@@ -109,7 +109,7 @@ export const metadata: Metadata = {
       'Creamos software y marcas digitales que venden. Webs ultra rápidas (SEO/Conversión), desarrollo a medida y crecimiento en redes.',
     images: [
       {
-        url: '/images/png/portfolio-preview.png',
+        url: '/images/png/L4 DEVELOPMENT.png',
         width: 1200,
         height: 630,
         alt: 'L4 DEVELOPMENT — Portfolio & Servicios',
