@@ -1,0 +1,215 @@
+import Image from 'next/image';
+import PythonLogo from '@/public/images/svg/Python-Logo.svg';
+import TailwindCSSLogo from '@/public/images/svg/Tailwind-Logo.svg';
+import ReactLogo from '@/public/images/svg/react-logo.svg';
+import TypescriptLogo from '@/public/images/svg/TS-Logo.svg';
+import FigmaLogo from '@/public/images/svg/figma-logo.svg';
+import VercelLogo from '@/public/images/svg/Vercel-Logo.svg';
+import OpenAILogo from '@/public/images/svg/openai-logo.svg';
+
+/**
+ * Listado base de logos
+ * - algunos se repiten para lograr el efecto infinito del marquee
+ * - todos con tamaño pequeño (30x30) para hacerlos uniformes
+ */
+export const logos = [
+  { src: ReactLogo, alt: 'React Logo', name: 'React', width: 30, height: 30 },
+  {
+    src: TypescriptLogo,
+    alt: 'TypeScript Logo',
+    name: 'TypeScript',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: VercelLogo,
+    alt: 'Vercel Logo',
+    name: 'Next.js',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: TailwindCSSLogo,
+    alt: 'Tailwind CSS Logo',
+    name: 'Tailwind CSS',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: OpenAILogo,
+    alt: 'OpenAI Logo',
+    name: 'AI/ML',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: PythonLogo,
+    alt: 'Python Logo',
+    name: 'Python',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: FigmaLogo,
+    alt: 'Figma Logo',
+    name: 'Figma',
+    width: 23,
+    height: 23,
+  },
+  {
+    src: OpenAILogo,
+    alt: 'OpenAI Logo',
+    name: 'OpenAI',
+    width: 30,
+    height: 30,
+  },
+  { src: ReactLogo, alt: 'React Logo', name: 'React', width: 30, height: 30 },
+  {
+    src: TypescriptLogo,
+    alt: 'TypeScript Logo',
+    name: 'TypeScript',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: VercelLogo,
+    alt: 'Vercel Logo',
+    name: 'Next.js',
+    width: 30,
+    height: 30,
+  },
+  {
+    src: TailwindCSSLogo,
+    alt: 'Tailwind CSS Logo',
+    name: 'Tailwind CSS',
+    width: 30,
+    height: 30,
+  },
+];
+
+interface LogoProps {
+  src: string | string[];
+  alt: string | string[];
+  name: string;
+  width?: number | number[];
+  height?: number | number[];
+}
+
+/**
+ * Logo
+ * ------------------------------------------------------------
+ * Renderiza un logo con su nombre.
+ * - Soporta el caso “doble logo” (cuando `src` es un array)
+ * - Esto lo dejamos por si en algún momento mezclas 2 marcas (ej. Next + Vercel)
+ */
+const Logo = ({ src, alt, name, width = 30, height = 30 }: LogoProps) => (
+  <div className="flex items-center gap-2 self-center lg:items-center lg:gap-2">
+    {Array.isArray(src) ? (
+      <div className="flex items-center gap-2">
+        {/* Primer logo */}
+        <div className="flex w-[60px] items-center justify-center">
+          <Image
+            src={src[0]}
+            alt={Array.isArray(alt) ? alt[0] : alt}
+            width={Array.isArray(width) ? width[0] : width}
+            height={Array.isArray(height) ? height[0] : height}
+            className="scale-150 invert [&>path]:fill-white"
+          />
+        </div>
+        {/* Segundo logo */}
+        <Image
+          src={src[1]}
+          alt={Array.isArray(alt) ? alt[1] : alt}
+          width={Array.isArray(width) ? width[1] : width}
+          height={Array.isArray(height) ? height[1] : height}
+        />
+      </div>
+    ) : (
+      // Logo simple
+      <div className="flex w-[60px] items-center justify-center">
+        <Image src={src} alt={alt as string} width={width as number} height={height as number} />
+      </div>
+    )}
+
+    {name && <div className="text-sm font-semibold lg:text-base">{name}</div>}
+  </div>
+);
+
+/**
+ * LogoList
+ * ------------------------------------------------------------
+ * Renderiza 1 “bloque” de logos
+ * Lo repetimos 2 veces para que el marquee no quede corto.
+ */
+export const LogoList = ({ startIndex = 0 }: { startIndex?: number }) => (
+  <div className="flex items-center">
+    {Array.from({ length: 2 }, (_, i) =>
+      logos.map((logo, index) => (
+        <div
+          key={`logo-${startIndex}-${i}-${index}`}
+          className="inline-flex items-center px-6"
+        >
+          <Logo {...logo} />
+        </div>
+      )),
+    ).flat()}
+  </div>
+);
+
+/**
+ * LogoCloud
+ * ------------------------------------------------------------
+ * - Sección con título + marquee infinito de logos
+ * - Tiene “masking” en los lados para que el scroll se vea más pro
+ * - Los elementos tienen `data-gsap="..."` porque los anima el hero
+ */
+export default function LogoCloud() {
+  return (
+    <div className="relative z-40 mx-auto mt-10 flex min-w-0 max-w-full flex-col gap-6 overflow-hidden px-4 text-white sm:px-6 md:mt-4 lg:max-w-[1080px] lg:gap-2 lg:px-0">
+      {/* Subheading animable */}
+      <h2
+        className="mx-auto w-full text-center text-xs opacity-0 lg:text-sm"
+        data-gsap="tech-subtitle"
+      >
+        Aprovechar tecnologías de última generación
+      </h2>
+
+      {/* Contenedor del marquee */}
+      <div
+        className="relative flex w-full min-w-0 overflow-hidden opacity-0"
+        data-gsap="logo-cloud"
+        style={{
+          maskImage: 'linear-gradient(to right, transparent, black 20%, black 80%, transparent)',
+          WebkitMaskImage:
+            'linear-gradient(to right, transparent, black 20%, black 80%, transparent)',
+        }}
+      >
+        {/* Marquee 1 */}
+        <div className="flex animate-marquee-scroll whitespace-nowrap py-2">
+          {Array.from({ length: 2 }, (_, i) => (
+            <LogoList key={`list-1-${i}`} startIndex={i} />
+          ))}
+        </div>
+
+        {/* Marquee 2 (desfasado) */}
+        <div
+          className="flex animate-marquee-scroll whitespace-nowrap py-2"
+          style={{ animationDelay: '-20s' }}
+          aria-hidden="true"
+        >
+          {Array.from({ length: 2 }, (_, i) => (
+            <LogoList key={`list-2-${i}`} startIndex={i + 2} />
+          ))}
+        </div>
+      </div>
+
+      {/* Texto final */}
+      <p
+        className="mx-auto w-full max-w-[280px] text-center text-xs opacity-0 sm:max-w-none lg:text-sm"
+        data-gsap="curve-text"
+      >
+        Mantenerse a la vanguardia y surfear las olas de la innovación
+      </p>
+    </div>
+  );
+}
