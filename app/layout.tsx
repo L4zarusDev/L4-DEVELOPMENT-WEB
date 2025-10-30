@@ -3,27 +3,52 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 
-// Providers / context que ya tienes
+// ✅ Estos componentes sí existen en tu repo según lo que compartiste
+import ScrollTracker from "@/components/ScrollTracker";
 import { LoadingProvider } from "@/lib/context/LoadingContext";
 import { LoadingManager } from "@/components/LoadingManager";
-
-// UI globales tuyas
-import ScrollTracker from "@/components/ScrollTracker";
-import ResponsiveGodRays from "@/components/ResponsiveGodRays";
 import DebugNoticeModal from "@/components/DebugNoticeModal";
-import NoiseTexture from "@/components/NoiseTexture";
-
-// si tienes un ThemeProvider tipo shadcn
-import { ThemeProvider } from "@/components/theme-provider";
-
-// tu componente de JSON-LD (asumo esta ruta)
-import { JsonLd } from "@/components/JsonLd";
-
-// fuentes (si las usas, ajústalo a tu proyecto)
-// import { inter } from "@/lib/fonts";
 
 // -----------------------------------------------------------------------------
-// Metadata básica del sitio
+// Fallbacks inline para evitar "Module not found" mientras no existan los reales
+// -----------------------------------------------------------------------------
+
+// No-op ThemeProvider (si luego agregas "@/components/theme-provider", reemplázalo)
+function ThemeProvider({
+  children,
+}: {
+  children: ReactNode;
+  attribute?: string;
+  defaultTheme?: string;
+  enableSystem?: boolean;
+}) {
+  return <>{children}</>;
+}
+
+// No-op ResponsiveGodRays (si luego agregas "@/components/ResponsiveGodRays", reemplázalo)
+function ResponsiveGodRays() {
+  return null;
+}
+
+// No-op NoiseTexture (si luego agregas "@/components/NoiseTexture", reemplázalo)
+function NoiseTexture() {
+  return null;
+}
+
+// JsonLd inline: cumple con el requerimiento de `id` y `data`
+function JsonLd({ id, data }: { id: string; data: Record<string, any> }) {
+  return (
+    <script
+      id={id}
+      type="application/ld+json"
+      // Importante: JSON limpio y seguro
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Metadata básica
 // -----------------------------------------------------------------------------
 export const metadata: Metadata = {
   title: "L4 DEVELOPMENT | l4zarus.dev",
@@ -55,15 +80,14 @@ export const metadata: Metadata = {
 };
 
 // -----------------------------------------------------------------------------
-// Datos estructurados que estabas inyectando
-// IMPORTANTE: ahora les ponemos `id` para que cumplan con el tipo JsonLdProps
+// Datos estructurados (con id para el validador de tipos)
 // -----------------------------------------------------------------------------
 const orgJson = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "L4 DEVELOPMENT",
   url: "https://l4zarus.dev",
-  logo: "https://l4zarus.dev/logo.png", // cámbialo por el real
+  logo: "https://l4zarus.dev/logo.png",
   sameAs: [
     "https://twitter.com/",
     "https://www.youtube.com/@",
@@ -90,33 +114,27 @@ const siteJson = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es" className="bg-black">
-      <body
-        // className={inter.className} // si usas fuente
-        className="min-h-screen bg-black text-white antialiased"
-      >
-        {/* Proveedor global de carga (contexto) */}
+      <body className="min-h-screen bg-black text-white antialiased">
         <LoadingProvider>
-          {/* ThemeProvider de shadcn / next-themes */}
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            {/* Barra de progreso de scroll arriba */}
+            {/* Barra de progreso de scroll */}
             <ScrollTracker />
 
-            {/* Fondo reactivo con rays */}
+            {/* Efecto de rayos (no-op de momento) */}
             <ResponsiveGodRays />
 
-            {/* Ruido sutil encima de todo */}
+            {/* Textura de ruido (no-op de momento) */}
             <NoiseTexture />
 
-            {/* Aviso de versión demo / depuración */}
+            {/* Modal de aviso de demo/debug según env */}
             <DebugNoticeModal />
 
-            {/* Pantalla de carga que se cierra cuando el contexto dice "listo" */}
+            {/* Pantalla de carga controlada por contexto */}
             <LoadingManager />
 
-            {/* Contenido de la app */}
             <main className="relative z-[1]">{children}</main>
 
-            {/* JSON-LD CORREGIDO */}
+            {/* JSON-LD con id (corrige el error de tipos) */}
             <JsonLd id="org" data={orgJson} />
             <JsonLd id="website" data={siteJson} />
           </ThemeProvider>
