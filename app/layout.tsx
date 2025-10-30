@@ -1,237 +1,124 @@
 // app/layout.tsx
-import type { Metadata, Viewport } from 'next';
-import {
-  Inter as FontSans,
-  La_Belle_Aurore as FontHandwriting,
-} from 'next/font/google';
-import localFont from 'next/font/local';
+import "./globals.css";
+import type { Metadata } from "next";
+import { ReactNode } from "react";
 
-import './globals.css';
-import { cn } from '@/lib/utils';
+// Providers / context que ya tienes
+import { LoadingProvider } from "@/lib/context/LoadingContext";
+import { LoadingManager } from "@/components/LoadingManager";
 
-import Menu from '@/components/Hero/Menu/Menu';
-import { ThemeProvider } from 'next-themes';
-import { LoadingProvider } from '@/lib/context/LoadingContext';
-import { LoadingManager } from '@/components/LoadingManager';
+// UI globales tuyas
+import ScrollTracker from "@/components/ScrollTracker";
+import ResponsiveGodRays from "@/components/ResponsiveGodRays";
+import DebugNoticeModal from "@/components/DebugNoticeModal";
+import NoiseTexture from "@/components/NoiseTexture";
 
-// SEO / JSON-LD
-import JsonLd from '@/components/SEO/JsonLd';
-import { buildOrganization, buildWebsite } from '@/components/SEO/builders';
+// si tienes un ThemeProvider tipo shadcn
+import { ThemeProvider } from "@/components/theme-provider";
 
-/* ─────────────────────────────────────────────────────────────
-   BASE URL
-   - Se intenta usar la env pública
-   - Si no, se cae en prod o en localhost
-   - Úsala en OG, JSON-LD, sitemap, etc.
-   ───────────────────────────────────────────────────────────── */
-const BASE =
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  (process.env.NODE_ENV === 'production'
-    ? 'https://l4zarus.dev'
-    : 'http://localhost:3000');
+// tu componente de JSON-LD (asumo esta ruta)
+import { JsonLd } from "@/components/JsonLd";
 
-/* ─────────────────────────────────────────────────────────────
-   METADATA
-   - Title por defecto + template
-   - OG / Twitter cards
-   - Alternates (multi idioma)
-   - Robots
-   ───────────────────────────────────────────────────────────── */
+// fuentes (si las usas, ajústalo a tu proyecto)
+// import { inter } from "@/lib/fonts";
+
+// -----------------------------------------------------------------------------
+// Metadata básica del sitio
+// -----------------------------------------------------------------------------
 export const metadata: Metadata = {
-  // Base para construir URLs absolutas
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || 'https://l4zarus.dev',
-  ),
-
-  title: {
-    default: 'L4 DEVELOPMENT — Software, Web & Growth',
-    template: '%s | L4 DEVELOPMENT',
-  },
-
+  title: "L4 DEVELOPMENT | l4zarus.dev",
   description:
-    'Creamos software y marcas digitales que venden. Webs ultra rápidas (SEO/Conversión), desarrollo a medida y crecimiento en redes. Haz despegar tu producto en 30 días.',
-
-  icons: {
-    icon: [
-      { url: '/L4.png', sizes: '16x16', type: 'image/png' },
-      { url: '/L4.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon.ico', sizes: 'any' },
-    ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-    other: [
-      { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#000000' },
-    ],
-  },
-
-  manifest: '/manifest.json',
-
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'L4 DEVELOPMENT',
-  },
-
-  formatDetection: {
-    telephone: false,
-  },
-
-  // Canonical + versiones por idioma
-  alternates: {
-    canonical: '/',
-    languages: {
-      'es-MX': '/es-MX',
-      en: '/en',
-    },
-  },
-
-  // Reglas para bots
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-
-  // Open Graph (para Facebook, LinkedIn, etc.)
+    "Desarrollo web moderno, IA aplicada y productos digitales. Next.js, React, TypeScript, WordPress, integraciones, dashboards y más.",
+  metadataBase: new URL("https://l4zarus.dev"),
   openGraph: {
-    type: 'website',
-    url: 'https://l4zarus.dev',
-    siteName: 'L4 DEVELOPMENT',
-    title: 'L4 DEVELOPMENT — Software, Web & Growth',
-    description:
-      'Creamos software y marcas digitales que venden. Webs ultra rápidas (SEO/Conversión), desarrollo a medida y crecimiento en redes.',
+    title: "L4 DEVELOPMENT",
+    description: "Desarrollo web moderno e IA aplicada.",
+    url: "https://l4zarus.dev",
+    siteName: "L4 DEVELOPMENT",
     images: [
       {
-        url: '/images/png/portfolio-preview.png',
+        url: "https://l4zarus.dev/og.png",
         width: 1200,
         height: 630,
-        alt: 'L4 DEVELOPMENT — Portfolio & Servicios',
+        alt: "L4 DEVELOPMENT",
       },
     ],
-    locale: 'es_MX',
+    locale: "es_MX",
+    type: "website",
   },
-
-  // Twitter / X cards
   twitter: {
-    card: 'summary_large_image',
-    site: '@L4_Dev1', // 👈 cámbialo cuando tengas el usuario real
-    creator: '@L4_Dev1',
-    title: 'L4 DEVELOPMENT — Software, Web & Growth',
-    description:
-      'Creamos software y marcas digitales que venden. Webs ultra rápidas (SEO/Conversión), desarrollo a medida y crecimiento en redes.',
-    images: ['/images/png/L4 DEVELOPMENT.png'],
-  },
-
-  // Verificación de Search Console (opcional)
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    card: "summary_large_image",
+    title: "L4 DEVELOPMENT",
+    description: "Desarrollo web moderno e IA aplicada.",
+    images: ["https://l4zarus.dev/og.png"],
   },
 };
 
-/* ─────────────────────────────────────────────────────────────
-   JSON-LD (datos estructurados)
-   - Organización
-   - Sitio web
-   ───────────────────────────────────────────────────────────── */
-const orgJson = buildOrganization({
-  name: 'L4 DEVELOPMENT',
-  url: BASE,
-  logo: `${BASE}/apple-touch-icon.png`,
+// -----------------------------------------------------------------------------
+// Datos estructurados que estabas inyectando
+// IMPORTANTE: ahora les ponemos `id` para que cumplan con el tipo JsonLdProps
+// -----------------------------------------------------------------------------
+const orgJson = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "L4 DEVELOPMENT",
+  url: "https://l4zarus.dev",
+  logo: "https://l4zarus.dev/logo.png", // cámbialo por el real
   sameAs: [
-    'https://github.com/L4zarusDev',
-    'https://www.instagram.com/l4.dev/',
-    // agrega LinkedIn/X si los tienes
+    "https://twitter.com/",
+    "https://www.youtube.com/@",
+    "https://www.instagram.com/",
+    "https://github.com/",
   ],
-});
-
-const siteJson = buildWebsite({
-  name: 'L4 DEVELOPMENT',
-  url: BASE,
-  searchUrl: `${BASE}/search`,
-});
-
-/* ─────────────────────────────────────────────────────────────
-   VIEWPORT
-   - Tema por defecto blanco (Safari, iOS)
-   ───────────────────────────────────────────────────────────── */
-export const viewport: Viewport = {
-  themeColor: '#ffffff',
 };
 
-/* ─────────────────────────────────────────────────────────────
-   FUENTES
-   - Sans para el texto
-   - Handwriting para detalles
-   - Local (MonoLisa) para código o toques especiales
-   ───────────────────────────────────────────────────────────── */
-const fontSans = FontSans({
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
+const siteJson = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "L4 DEVELOPMENT",
+  url: "https://l4zarus.dev",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: "https://l4zarus.dev/search?q={search_term_string}",
+    "query-input": "required name=search_term_string",
+  },
+};
 
-const fontHandwriting = FontHandwriting({
-  weight: ['400'],
-  subsets: ['latin'],
-  variable: '--font-handwriting',
-});
-
-const MonaLisa = localFont({
-  src: '../public/fonts/monolisa/MonoLisa-Regular.ttf',
-  variable: '--font-monalisa',
-});
-
-/* ─────────────────────────────────────────────────────────────
-   ROOT LAYOUT
-   - Aquí van los providers globales
-   - Menu fijo
-   - Contenedor principal
-   - Inyección de JSON-LD
-   ───────────────────────────────────────────────────────────── */
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// -----------------------------------------------------------------------------
+// RootLayout
+// -----------------------------------------------------------------------------
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className="bg-black">
       <body
-        className={cn(
-          'min-h-screen bg-bg-default font-sans antialiased',
-          fontSans.variable,
-          fontHandwriting.variable,
-          MonaLisa.variable,
-        )}
+        // className={inter.className} // si usas fuente
+        className="min-h-screen bg-black text-white antialiased"
       >
-        {/* Contexto global de “estoy cargando” */}
+        {/* Proveedor global de carga (contexto) */}
         <LoadingProvider>
-          {/* Overlay / barra / indicador de carga */}
-          <LoadingManager />
+          {/* ThemeProvider de shadcn / next-themes */}
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            {/* Barra de progreso de scroll arriba */}
+            <ScrollTracker />
 
-          {/* ThemeProvider permite alternar light/dark vía class en <html> */}
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {/* Menú global superior */}
-            <Menu />
+            {/* Fondo reactivo con rays */}
+            <ResponsiveGodRays />
 
-            {/* Contenedor principal de la página */}
-            <div className="mx-auto max-w-[1440px] bg-transparent px-4 sm:px-6 lg:px-8">
-              {children}
-            </div>
+            {/* Ruido sutil encima de todo */}
+            <NoiseTexture />
 
-            {/* Inyección de datos estructurados para SEO */}
-            <JsonLd data={orgJson} />
-            <JsonLd data={siteJson} />
+            {/* Aviso de versión demo / depuración */}
+            <DebugNoticeModal />
+
+            {/* Pantalla de carga que se cierra cuando el contexto dice "listo" */}
+            <LoadingManager />
+
+            {/* Contenido de la app */}
+            <main className="relative z-[1]">{children}</main>
+
+            {/* JSON-LD CORREGIDO */}
+            <JsonLd id="org" data={orgJson} />
+            <JsonLd id="website" data={siteJson} />
           </ThemeProvider>
         </LoadingProvider>
       </body>
