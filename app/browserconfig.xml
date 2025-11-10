@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  browserconfig.xml
+  
+  Este archivo lo usan (sobre todo) navegadores/entornos de Microsoft
+  (IE/Edge clásico, Windows tiles) para saber qué ícono y qué color usar
+  cuando anclas el sitio al inicio.
+  Hoy casi no se toca, pero sigue siendo bueno tenerlo si apuntas a desktop.
+-->
+<browserconfig>
+  <msapplication>
+    <tile>
+      <!--
+        Icono para el tile de Windows.
+        - Debe existir en /public/L4.png
+        - Suele ser cuadrado
+        - Aquí podrías definir más tamaños (70x70, 310x310) si quieres
+      -->
+      <square150x150logo src="/L4.png" />
+
+      <!--
+        Color de fondo del tile.
+        OJO: el valor suele ir en una sola línea y sin espacios extra.
+        Si quieres ser más estricto, pon: <TileColor>#ff0000ff</TileColor>
+      -->
+      <TileColor>#ff0000ff</TileColor>
+    </tile>
+  </msapplication>
+</browserconfig>
