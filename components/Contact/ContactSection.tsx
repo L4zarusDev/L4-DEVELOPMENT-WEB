@@ -1,0 +1,329 @@
+'use client';
+
+import React, { useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
+import Turnstile from '@/components/Security/Turnstile';
+
+type FormState = 'idle' | 'loading' | 'success' | 'error';
+
+/**
+ * Sección de contacto
+ * - Animada con framer-motion cuando entra al viewport
+ * - Form con honeypot + Cloudflare Turnstile (anti-spam)
+ * - Envía a /api/contact y dispara eventos de GA4 y Meta Pixel
+ * - Incluye un aside con canales alternativos (mail, IG, cal.com)
+ */
+export default function ContactSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-10% 0px -10% 0px' });
+
+  const [state, setState] = useState<FormState>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [cfToken, setCfToken] = useState('');
+
+  /**
+   * Handler de envío del formulario.
+   * - Evita submit por defecto
+   * - Valida honeypot
+   * - Valida que haya token de Turnstile
+   * - Hace POST al endpoint /api/contact
+   * - Si hay error, muestra mensaje
+   */
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setState('loading');
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    // 🐝 Honeypot anti-bots: si está lleno, damos "success" silencioso
+    if (formData.get('company')?.toString().trim()) {
+      setState('success');
+      return;
+    }
+
+    // Cloudflare Turnstile obligatorio
+    if (!cfToken) {
+      setErrorMsg('Verificación requerida. Completa el captcha.');
+      setState('idle');
+      return;
+    }
+
+    // Payload estructurado
+    const payload = {
+      name: formData.get('name')?.toString() || '',
+      email: formData.get('email')?.toString() || '',
+      budget: formData.get('budget')?.toString() || '',
+      services: (formData.getAll('services') as string[]) || [],
+      message: formData.get('message')?.toString() || '',
+      cfToken,
+    };
+
+    // Validación mínima
+    if (!payload.name || !payload.email || !payload.message) {
+      setErrorMsg('Por favor completa nombre, email y mensaje.');
+      setState('idle');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      // Éxito 🥳
+      setState('success');
+      form.reset();
+      setCfToken('');
+
+      // GA4 event (opcional)
+      // @ts-ignore
+      window.dataLayer = window.dataLayer || [];
+      // @ts-ignore
+      window.dataLayer.push({
+        event: 'submit_contact',
+        contact_method: 'form',
+        services: payload.services.join(','),
+        budget: payload.budget,
+      });
+
+      // Meta Pixel (opcional)
+      // @ts-ignore
+      if (typeof window.fbq === 'function') {
+        // @ts-ignore
+        window.fbq('trackCustom', 'ContactFormSubmitted', {
+          services: payload.services.join(','),
+          budget: payload.budget,
+        });
+      }
+    } catch (_err) {
+      setErrorMsg('No se pudo enviar el mensaje. Intenta de nuevo.');
+      setState('error');
+    }
+  };
+
+  // Variants de animación
+  const fade = (delay = 0) => ({
+    hidden: { opacity: 0, y: 24 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, delay },
+    },
+  });
+
+  return (
+    <section id="contact" className="relative mx-auto mt-40 max-w-7xl px-4">
+      {/* Fondo decorativo */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-60"
+        style={{
+          background:
+            'radial-gradient(60% 50% at 50% 0%, rgba(185,28,28,0.18) 0%, rgba(0,0,0,0) 60%)',
+        }}
+      />
+
+      {/* Heading */}
+      <motion.div
+        ref={ref}
+        initial="hidden"
+        animate={isInView ? 'visible' : 'hidden'}
+        variants={fade(0)}
+        className="text-center"
+      >
+        <p className="mx-auto inline-block rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs uppercase tracking-wider text-red-300">
+          Contacto
+        </p>
+        <h2 className="mt-4 text-3xl font-bold text-white sm:text-4xl md:text-5xl">
+          ¿Listo para despegar en <span className="text-red-400">30 días</span>?
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-white/80">
+          Cuéntame del proyecto y te propongo el mejor enfoque (MVP, web de conversión o growth de
+          redes).
+        </p>
+      </motion.div>
+
+      {/* Contenido: form + aside */}
+      <div className="mt-10 grid gap-8 md:grid-cols-[1.1fr,0.9fr]">
+        {/* Formulario principal */}
+        <motion.form
+          onSubmit={onSubmit}
+          initial="hidden"
+          animate={isInView ? 'visible' : 'hidden'}
+          variants={fade(0.05)}
+          className="rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900/60 to-black/60 p-6"
+        >
+          {/* Honeypot (invisible para humanos) */}
+          <input
+            type="text"
+            name="company"
+            className="hidden"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+
+          {/* Nombre / Email */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm text-white/80">Nombre*</label>
+              <input
+                name="name"
+                required
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none ring-red-600/30 placeholder-white/40 focus:ring-2"
+                placeholder="Tu nombre"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-white/80">Email*</label>
+              <input
+                type="email"
+                name="email"
+                required
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none ring-red-600/30 placeholder-white/40 focus:ring-2"
+                placeholder="tu@email.com"
+              />
+            </div>
+          </div>
+
+          {/* Presupuesto / Servicios */}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {/* Presupuesto */}
+            <div>
+              <label className="mb-1 block text-sm text-white/80">Presupuesto</label>
+              <select
+                name="budget"
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none ring-red-600/30 focus:ring-2"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Selecciona un rango
+                </option>
+                <option>&lt; $1,000</option>
+                <option>$1,000 – $3,000</option>
+                <option>$3,000 – $8,000</option>
+                <option>$8,000 – $20,000</option>
+                <option>$20,000+</option>
+              </select>
+            </div>
+
+            {/* Servicios (checkboxes “bonitos”) */}
+            <div>
+              <label className="mb-1 block text-sm text-white/80">Servicios</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  'Desarrollo de software',
+                  'Desarrollo web',
+                  'Impulso redes',
+                  'Licencias',
+                ].map((service) => (
+                  <label
+                    key={service}
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-sm text-red-200"
+                  >
+                    <input
+                      type="checkbox"
+                      name="services"
+                      value={service}
+                      className="accent-red-500"
+                    />
+                    {service}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Mensaje */}
+          <div className="mt-4">
+            <label className="mb-1 block text-sm text-white/80">Mensaje*</label>
+            <textarea
+              name="message"
+              required
+              rows={6}
+              className="w-full resize-none rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none ring-red-600/30 placeholder-white/40 focus:ring-2"
+              placeholder="Cuéntame objetivos, plazos y contexto para darte la mejor propuesta."
+            />
+          </div>
+
+          {/* Turnstile (captcha) */}
+          <div className="mt-4">
+            <Turnstile onToken={setCfToken} />
+          </div>
+
+          {/* Mensajes de estado */}
+          <div className="mt-4 min-h-[24px] text-sm">
+            {state === 'loading' && <span className="text-white/80">Enviando…</span>}
+            {state === 'success' && (
+              <span className="text-green-400">¡Gracias! Te responderé muy pronto.</span>
+            )}
+            {(state === 'error' || errorMsg) && (
+              <span className="text-red-400">
+                {errorMsg || 'Error al enviar.'}
+              </span>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="submit"
+              disabled={state === 'loading'}
+              className="grid flex-1 place-items-center rounded-full bg-white py-3 text-center text-base text-black shadow-cta transition hover:bg-transparent hover:text-white hover:shadow-alt-cta disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {state === 'loading' ? 'Enviando…' : 'Enviar mensaje'}
+            </button>
+            <a
+              href="https://cal.com/l4zarusdev"
+              className="grid flex-1 place-items-center rounded-full py-3 text-center text-base text-white shadow-alt-cta transition hover:bg-white hover:text-black hover:shadow-cta"
+            >
+              Agendar llamada
+            </a>
+          </div>
+        </motion.form>
+
+        {/* Aside con otros canales */}
+        <motion.aside
+          initial="hidden"
+          animate={isInView ? 'visible' : 'hidden'}
+          variants={fade(0.1)}
+          className="rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900/60 to-black/60 p-6"
+        >
+          <h3 className="text-lg font-semibold text-white">¿Prefieres otro canal?</h3>
+          <p className="mt-2 text-white/75">
+            También respondo por email y redes. Suelo contestar en menos de 24 h hábiles.
+          </p>
+
+          <div className="mt-4 space-y-3 text-sm">
+            <a
+              href="mailto:hello@l4zarus.dev"
+              className="block rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white/90 hover:border-red-600/40"
+            >
+              📬 hello@l4zarus.dev
+            </a>
+            <a
+              href="https://instagram.com/l4.dev"
+              target="_blank"
+              className="block rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white/90 hover:border-red-600/40"
+              rel="noreferrer"
+            >
+              📸 Instagram @l4.dev
+            </a>
+            <a
+              href="https://cal.com/l4zarusdev"
+              target="_blank"
+              className="block rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white/90 hover:border-red-600/40"
+              rel="noreferrer"
+            >
+              📅 Agenda 15 min
+            </a>
+          </div>
+        </motion.aside>
+      </div>
+    </section>
+  );
+}
